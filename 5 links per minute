@@ -1,0 +1,46 @@
+To implement crawling with a limit of 5 links per minute, you can use a combination of sleep intervals and counting mechanisms. Here's how you can modify your code to achieve this:
+
+function followLinks($url, $limit = 5) {
+    global $alreadyCrawled;
+    global $crawling;
+
+    $parser = new DomDocumentParser($url);
+    $linkList = $parser->getLinks();
+
+    $count = 0; // Initialize link count
+
+    foreach ($linkList as $link) {
+        if ($count >= $limit) {
+            break; // Exit loop if link limit is reached
+        }
+
+        $href = $link->getAttribute("href");
+
+        // Filter hrefs
+        if (strpos($href, "#") !== false || substr($href, 0, 11) == "javascript:") {
+            continue;
+        }
+
+        $href = createLink($href, $url);
+
+        if (!in_array($href, $alreadyCrawled)) {
+            $alreadyCrawled[] = $href;
+            $crawling[] = $href;
+
+            getDetails($href);
+
+            $count++; // Increment link count
+
+            // Introduce a delay of 12 seconds (5 links per minute)
+            if ($count < $limit) {
+                sleep(12);
+            }
+        }
+    }
+
+    array_shift($crawling);
+
+    foreach ($crawling as $site) {
+        followLinks($site);
+    }
+}
